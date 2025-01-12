@@ -4189,6 +4189,16 @@
 	)
 	(wire
 		(pts
+			(xy 86.36 137.16) (xy 100.33 137.16)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1c4032ea-bc2c-4c52-80ac-d3ccd1a1b1df")
+	)
+	(wire
+		(pts
 			(xy 234.95 88.9) (xy 234.95 92.71)
 		)
 		(stroke
@@ -4486,16 +4496,6 @@
 			(type default)
 		)
 		(uuid "577096ab-1d0d-449f-9ff9-247f3d50570c")
-	)
-	(wire
-		(pts
-			(xy 86.36 137.16) (xy 102.87 137.16)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "5843b848-5954-494e-bcb6-01ab31808c09")
 	)
 	(wire
 		(pts
@@ -5545,7 +5545,7 @@
 		(uuid "0bf8d07c-7867-445e-91b7-9084321e9a9c")
 	)
 	(label "KEY"
-		(at 100.33 129.54 180)
+		(at 100.33 137.16 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -5756,7 +5756,7 @@
 		(uuid "5e61330c-1e2b-4334-af1a-f703647b7cee")
 	)
 	(label "IRM"
-		(at 100.33 137.16 180)
+		(at 100.33 129.54 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -10581,7 +10581,7 @@
 	)
 	(symbol
 		(lib_id "Connector:TestPoint")
-		(at 102.87 137.16 270)
+		(at 100.33 129.54 270)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -10590,7 +10590,7 @@
 		(fields_autoplaced yes)
 		(uuid "d9578fff-9920-46cd-9dec-1bf7b61bc7d6")
 		(property "Reference" "TP2"
-			(at 107.95 135.8899 90)
+			(at 105.41 128.2699 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10599,7 +10599,7 @@
 			)
 		)
 		(property "Value" "TestPoint"
-			(at 107.95 138.4299 90)
+			(at 105.41 130.8099 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10609,7 +10609,7 @@
 			)
 		)
 		(property "Footprint" "TestPoint:TestPoint_Pad_D2.5mm"
-			(at 102.87 142.24 0)
+			(at 100.33 134.62 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10618,7 +10618,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 102.87 142.24 0)
+			(at 100.33 134.62 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10627,7 +10627,7 @@
 			)
 		)
 		(property "Description" "test point"
-			(at 102.87 137.16 0)
+			(at 100.33 129.54 0)
 			(effects
 				(font
 					(size 1.27 1.27)
