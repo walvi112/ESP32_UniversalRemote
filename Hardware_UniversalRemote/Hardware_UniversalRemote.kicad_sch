@@ -3820,6 +3820,12 @@
 		(uuid "7570cb53-9362-4cd9-87c9-25d5b311004b")
 	)
 	(junction
+		(at 71.12 85.09)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "75fb95d8-9b8f-4fa1-99f7-016f5963a7ad")
+	)
+	(junction
 		(at 71.12 96.52)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -4518,6 +4524,16 @@
 			(type default)
 		)
 		(uuid "5b932e09-2391-431f-a3c6-0d7a4e639083")
+	)
+	(wire
+		(pts
+			(xy 71.12 82.55) (xy 71.12 85.09)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "607aa4ea-f2d9-4820-808e-76698f584b92")
 	)
 	(wire
 		(pts
@@ -7164,6 +7180,72 @@
 			(project "Hardware_UniversalRemote"
 				(path "/afb609ba-90f2-4616-a61f-4359f566cfcc"
 					(reference "R3")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:+3.3V")
+		(at 71.12 82.55 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "3b462bc5-0e21-4e9e-a088-e11e842257a7")
+		(property "Reference" "#PWR024"
+			(at 71.12 86.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "+3.3V"
+			(at 71.12 77.47 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 71.12 82.55 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 71.12 82.55 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"+3.3V\""
+			(at 71.12 82.55 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "7bfd5ceb-7ea2-46f2-a5b0-ba519d226675")
+		)
+		(instances
+			(project "Hardware_UniversalRemote"
+				(path "/afb609ba-90f2-4616-a61f-4359f566cfcc"
+					(reference "#PWR024")
 					(unit 1)
 				)
 			)
