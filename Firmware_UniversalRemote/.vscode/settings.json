@@ -1,0 +1,14 @@
+{
+    "idf.espIdfPathWin": "d:\\Espressif\\frameworks\\esp-idf-v5.3.1",
+    "idf.toolsPathWin": "d:\\Espressif",
+    "idf.openOcdConfigs": [
+        "board/esp32-wrover-kit-3.3v.cfg"
+    ],
+    "files.associations": {
+        "gpio.h": "c",
+        "irmp.h": "c",
+        "freertos.h": "c"
+    },
+    "idf.flashType": "UART",
+    "idf.portWin": "COM3"
+}

@@ -1,0 +1,3 @@
+[submodule "Firmware_UniversalRemote/components/esp-irmp_irsnd"]
+	path = Firmware_UniversalRemote/components/esp-irmp_irsnd
+	url = git@github.com:walvi112/esp-irmp_irsnd.git
