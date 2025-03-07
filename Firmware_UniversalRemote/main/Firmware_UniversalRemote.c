@@ -6,6 +6,8 @@
 #include "driver/gpio.h"
 #include "irmp.h"
 #include "irsnd.h"
+#include "wifi_connect.h"
+#include "webserver.h"
 #define IR_READ_PERIOD_US   (1000000 / F_INTERRUPTS)
 
 #define LED_PIN              GPIO_NUM_17
@@ -27,18 +29,6 @@ void app_main(void)
     esp_timer_start_periodic(ir_read_task_handle, IR_READ_PERIOD_US);
 
     gpio_dump_io_configuration(stdout, (1ULL << LED_PIN) | (1ULL << 13));
-
-    while (1)
-    {
-        if (irmp_get_data(&irmp_data)) {
-            gpio_set_level(LED_PIN, 1);
-            printf("\nIRMP %10s(%2d): addr=0x%04x cmd=0x%04x, f=%d ",
-                irmp_protocol_names[ irmp_data.protocol],
-                irmp_data.protocol,
-                irmp_data.address,
-                irmp_data.command,
-                irmp_data.flags);
-        }
-        vTaskDelay(100 / portTICK_PERIOD_MS);
-    }
+    connect_wifi();
+    startwebserver();
 }
