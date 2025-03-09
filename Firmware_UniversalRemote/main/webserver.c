@@ -4,8 +4,18 @@
 
 static const char *TAG = "WEBSERVER";
 
-static esp_err_t http_resp_tv_remote(httpd_req_t *req) 
+static esp_err_t http_resp_favicon(httpd_req_t *req)
 {
+    extern const unsigned char favicon_ico_start[] asm("_binary_favicon_ico_start");
+    extern const unsigned char favicon_ico_end[]   asm("_binary_favicon_ico_end");
+    const size_t favicon_ico_size = (favicon_ico_end - favicon_ico_start);
+    httpd_resp_set_type(req, "image/x-icon");
+    httpd_resp_send(req, (const char *)favicon_ico_start, favicon_ico_size);
+    return ESP_OK;
+}
+
+static esp_err_t http_resp_tv_remote(httpd_req_t *req) 
+{   
     extern const unsigned char tv_remote_html_start[] asm("_binary_tv_remote_html_start");
     extern const unsigned char tv_remote_html_end[] asm("_binary_tv_remote_html_end");
     const size_t tv_remote_html_size = (tv_remote_html_end - tv_remote_html_start);
@@ -14,7 +24,6 @@ static esp_err_t http_resp_tv_remote(httpd_req_t *req)
     httpd_resp_sendstr_chunk(req, NULL);
     return ESP_OK;
 }
-
 
 esp_err_t startwebserver(void) 
 {
@@ -36,6 +45,15 @@ esp_err_t startwebserver(void)
 
     };
     httpd_register_uri_handler(server, &tv_remote);
+
+    httpd_uri_t favicon = {
+        .uri = "/favicon.ico",
+        .method = HTTP_GET,
+        .handler = http_resp_favicon,
+        .user_ctx = NULL,
+
+    };
+    httpd_register_uri_handler(server, &favicon);
 
     return ESP_OK;
 }

@@ -3,11 +3,8 @@
 
 #include "esp_err.h"
 
-
-#define WIFI_SSID         "ESP_WIFI"
-#define WIFI_PWD          "1234567890"
-#define WIFI_CHANNEL       1
-
+#define WIFI_SSID         ""
+#define WIFI_PWD          ""
 #define WIFI_MAX_RETRY     10
 
 #ifdef __cplusplus
