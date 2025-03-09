@@ -56,14 +56,11 @@ void app_main(void)
     gpio_reset_pin(LED_PIN);
     gpio_set_direction(LED_PIN, GPIO_MODE_OUTPUT);
 
-    gpio_config_t io_conf = {
-        .intr_type = GPIO_INTR_NEGEDGE,
-        .mode = GPIO_MODE_INPUT,
-        .pin_bit_mask = (1ULL << KEY_PIN),
-        .pull_down_en = 0,
-        .pull_up_en = 0
-    };
-    gpio_config(&io_conf);
+    gpio_reset_pin(KEY_PIN);
+    gpio_set_direction(KEY_PIN, GPIO_MODE_INPUT);
+    gpio_set_pull_mode(KEY_PIN, GPIO_FLOATING);
+    gpio_set_intr_type(KEY_PIN, GPIO_INTR_NEGEDGE);
+
     gpio_install_isr_service(ESP_INTR_FLAG_IRAM);
     gpio_isr_handler_add(KEY_PIN, key_isr_handler, (void*) KEY_PIN);
 
@@ -79,7 +76,7 @@ void app_main(void)
     ir_mutex = xSemaphoreCreateMutex();
 
     xTaskCreatePinnedToCore(&led_toggle_task, "LED_TOGGLE_TASK", 1024, NULL, 1, &led_toggle_task_handle, 1);
-    xTaskCreatePinnedToCore(&ir_task, "IR_TASK", 1024, NULL, 1, &ir_task_handle, 1);
+    xTaskCreatePinnedToCore(&ir_task, "IR_TASK", 2048, NULL, 1, &ir_task_handle, 1);
     xTaskCreatePinnedToCore(&key_press_task, "KEY_PRESS_TASK", 1024, NULL, 2, &key_press_task_handle, 1);
     xTaskCreatePinnedToCore(&cli_task, "CLI_TASK", 2048, NULL, 1, NULL, 1);
 }
@@ -128,6 +125,14 @@ void key_press_task(void *args)
     {
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
         printf("User key pressed\n");
+        if (xSemaphoreTake(ir_mutex, 10 / portTICK_PERIOD_MS) == pdTRUE) {
+            irmp_data.address  = 768;       
+            irmp_data.command  = 10261;       
+            irmp_data.flags    = 0;
+            irmp_data.protocol = IRMP_SIRCS_PROTOCOL;
+            irsnd_send_data (&irmp_data, TRUE);
+            xSemaphoreGive(ir_mutex);
+        }
     }
 }
 
@@ -172,7 +177,7 @@ void cli_task(void *args)
                     irmp_data.address  = (uint8_t) ir_send[0];       
                     irmp_data.command  = ir_send[1];       
                     irmp_data.flags    = 0;
-                    irmp_data.protocol = IRMP_NEC_PROTOCOL;
+                    irmp_data.protocol = IRMP_SIRCS_PROTOCOL;
                     irsnd_send_data (&irmp_data, TRUE);
                     xSemaphoreGive(ir_mutex);
                 }
