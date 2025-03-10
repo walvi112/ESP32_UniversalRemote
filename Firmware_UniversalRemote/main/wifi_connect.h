@@ -3,9 +3,11 @@
 
 #include "esp_err.h"
 
-#define WIFI_SSID         ""
-#define WIFI_PWD          ""
+#define WIFI_SSID         "DQV11"
+#define WIFI_PWD          "712712712"
 #define WIFI_MAX_RETRY     10
+
+#define MDNS_HOSTNAME      "remote"
 
 #ifdef __cplusplus
 extern "C" {

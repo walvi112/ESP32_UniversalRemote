@@ -1,6 +1,5 @@
 #include "webserver.h"
 #include "esp_http_server.h"
-#include "mdns.h"
 #include "esp_log.h"
 
 static const char *TAG = "WEBSERVER";
