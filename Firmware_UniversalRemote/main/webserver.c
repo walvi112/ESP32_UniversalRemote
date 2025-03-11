@@ -17,37 +17,54 @@ static esp_err_t http_resp_favicon(httpd_req_t *req)
 static esp_err_t http_resp_root(httpd_req_t *req) 
 {   
     httpd_resp_set_status(req, "307 Temporary Redirect");
-    httpd_resp_set_hdr(req, "Location", "/tv");
+    httpd_resp_set_hdr(req, "Location", "/tv/1");
     httpd_resp_send(req, NULL, 0); 
     return ESP_OK;
 }
 
 static esp_err_t http_resp_tv_remote(httpd_req_t *req) 
 {   
-    extern const unsigned char tv_remote_html_start[] asm("_binary_tv_remote_html_start");
-    extern const unsigned char tv_remote_html_end[] asm("_binary_tv_remote_html_end");
-    const size_t tv_remote_html_size = (tv_remote_html_end - tv_remote_html_start);
+    char *pch =strrchr(req->uri,'/');
+    long num_dev = strtol(pch + 1, NULL, 10);
+    
+    if (num_dev > 0 && num_dev <= 5) {
+        extern const unsigned char tv_remote_html_start[] asm("_binary_tv_remote_html_start");
+        extern const unsigned char tv_remote_html_end[] asm("_binary_tv_remote_html_end");
+        const size_t tv_remote_html_size = (tv_remote_html_end - tv_remote_html_start);
 
-    httpd_resp_send_chunk(req, (const char *)tv_remote_html_start, tv_remote_html_size);
-    httpd_resp_sendstr_chunk(req, NULL);
-    return ESP_OK;
+        httpd_resp_send_chunk(req, (const char *)tv_remote_html_start, tv_remote_html_size);
+        httpd_resp_sendstr_chunk(req, NULL);
+        return ESP_OK;
+    } 
+
+    httpd_resp_send_404(req);
+    return ESP_FAIL;
 }
 
 static esp_err_t http_resp_ac_remote(httpd_req_t *req) 
 {   
-    extern const unsigned char ac_remote_html_start[] asm("_binary_ac_remote_html_start");
-    extern const unsigned char ac_remote_html_end[] asm("_binary_ac_remote_html_end");
-    const size_t ac_remote_html_size = (ac_remote_html_end - ac_remote_html_start);
+    char *pch =strrchr(req->uri,'/');
+    long num_dev = strtol(pch + 1, NULL, 10);
 
-    httpd_resp_send_chunk(req, (const char *)ac_remote_html_start, ac_remote_html_size);
-    httpd_resp_sendstr_chunk(req, NULL);
-    return ESP_OK;
+    if (num_dev > 0 && num_dev <= 5) {
+        extern const unsigned char ac_remote_html_start[] asm("_binary_ac_remote_html_start");
+        extern const unsigned char ac_remote_html_end[] asm("_binary_ac_remote_html_end");
+        const size_t ac_remote_html_size = (ac_remote_html_end - ac_remote_html_start);
+
+        httpd_resp_send_chunk(req, (const char *)ac_remote_html_start, ac_remote_html_size);
+        httpd_resp_sendstr_chunk(req, NULL);
+        return ESP_OK;
+    }
+
+    httpd_resp_send_404(req);
+    return ESP_FAIL;
 }
 
 esp_err_t startwebserver(void) 
 {
     httpd_handle_t server = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+    config.uri_match_fn = httpd_uri_match_wildcard;
     ESP_LOGI(TAG, "Starting server on port: '%d'", config.server_port);
 
     if (httpd_start(&server, &config) != ESP_OK) {
@@ -66,7 +83,7 @@ esp_err_t startwebserver(void)
     httpd_register_uri_handler(server, &root);
 
     httpd_uri_t tv_remote = {
-        .uri = "/tv",
+        .uri = "/tv/*",
         .method = HTTP_GET,
         .handler = http_resp_tv_remote,
         .user_ctx = NULL,
@@ -75,7 +92,7 @@ esp_err_t startwebserver(void)
     httpd_register_uri_handler(server, &tv_remote);
 
     httpd_uri_t ac_remote = {
-        .uri = "/ac",
+        .uri = "/ac/*",
         .method = HTTP_GET,
         .handler = http_resp_ac_remote,
         .user_ctx = NULL,

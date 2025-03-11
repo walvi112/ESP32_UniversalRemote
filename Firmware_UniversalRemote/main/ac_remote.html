@@ -14,7 +14,6 @@
         }
 
         .remote{
-          width: 100;
           max-width: 400px;
           margin: auto;
           background-color: #333;
@@ -102,14 +101,28 @@
     <h1>AC REMOTE</h1>
     <div class="d-flex flex-column justify-content-center">
       <div class="container text-center remote">
-        <div class="dropdown">
-          <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
-            AC Remote
-          </button>
-          <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
-            <li><a class="dropdown-item" href="/tv">TV Remote</a></li>
-            <li><a class="dropdown-item" href="/ac">AC Remote</a></li>
-          </ul>
+        <div class="d-flex flex-row justify-content-around">
+          <div class="dropdown">
+            <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+              AC Remote
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+              <li><a class="dropdown-item" href="/tv/1">TV Remote</a></li>
+              <li><a class="dropdown-item" href="/ac/1">AC Remote</a></li>
+            </ul>
+          </div>
+          <div class="dropdown">
+            <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton2" data-bs-toggle="dropdown" aria-expanded="false">
+              1
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton2">
+              <li><a class="dropdown-item" href="/ac/1">1</a></li>
+              <li><a class="dropdown-item" href="/ac/2">2</a></li>
+              <li><a class="dropdown-item" href="/ac/3">3</a></li>
+              <li><a class="dropdown-item" href="/ac/4">4</a></li>
+              <li><a class="dropdown-item" href="/ac/5">5</a></li>
+            </ul>
+          </div>
         </div>
         <div class="row row-cols-3">
           <div class="col">
@@ -174,6 +187,9 @@
           })
           .catch(error => console.error('Error:', error));
       }
+      const url = window.location.href;
+      const number = url.substring(url.lastIndexOf('/') + 1);
+      document.getElementById("dropdownMenuButton2").textContent = `${number}`;    
       </script>
 
   </body>
