@@ -7,7 +7,6 @@
 #include "driver/uart.h"
 #include "irmp.h"
 #include "irsnd.h"
-#include "remoteconfig.h"
 #include "wifi_connect.h"
 #include "webserver.h"
 
@@ -84,10 +83,9 @@ void app_main(void)
 esp_err_t str_to_parram_int(char *input, int *output_array, unsigned int array_length)
 {
     uint8_t token_count = 0;
-    char *pch = strtok(uart_buffer, " ");
+    char *pch = strtok(input, " ");
     while (pch != NULL && token_count < array_length) {
         output_array[token_count] = strtol(pch, NULL, 10);
-        printf("Convert %d \n", output_array[token_count]);
         pch = strtok(NULL, " ");
         token_count += 1;    
     }
@@ -132,11 +130,11 @@ void cli_task(void *args)
             }
             else if (strncmp(uart_buffer, "send ir ", strlen("send ir ")) == 0) {
                 int ir_send[3];
-                if (str_to_parram_int(uart_buffer + strlen("send ir ") + 1, ir_send, 3) == ESP_FAIL) {
+                if (str_to_parram_int(uart_buffer + strlen("send ir "), ir_send, 3) == ESP_FAIL) {
                     continue;
                 }
                 if (xSemaphoreTake(ir_mutex, 10 / portTICK_PERIOD_MS) == pdTRUE) {
-                    printf(">Sent ok: %d %d %d\n", ir_send[0], ir_send[1], ir_send[2]);
+                    printf(">Sent IR: %d %d %d\n", ir_send[0], ir_send[1], ir_send[2]);
                     irmp_data.address  = (uint16_t) ir_send[1];       
                     irmp_data.command  = (uint16_t) ir_send[2];       
                     irmp_data.flags    = 0;
