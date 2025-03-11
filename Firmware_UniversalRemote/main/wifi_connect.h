@@ -3,9 +3,8 @@
 
 #include "esp_err.h"
 
-#define WIFI_SSID         ""
-#define WIFI_PWD          ""
-#define WIFI_MAX_RETRY     10
+#define WIFI_SSID         "DEFAULT"
+#define WIFI_PWD          "DEFAULT"
 
 #define MDNS_HOSTNAME      "remote"
 
@@ -14,6 +13,7 @@ extern "C" {
 #endif
 
 esp_err_t connect_wifi(void);
+esp_err_t set_wifi(char *p_ssid, char *p_pwd);
 
 #ifdef __cplusplus
 }
