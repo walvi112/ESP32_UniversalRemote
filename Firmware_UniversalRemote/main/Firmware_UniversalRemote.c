@@ -73,7 +73,7 @@ void app_main(void)
     gpio_dump_io_configuration(stdout, (1ULL << LED_PIN) | (1ULL << KEY_PIN));
     ir_mutex = xSemaphoreCreateMutex();
 
-    xTaskCreatePinnedToCore(&cli_task, "CLI_TASK", 2048, NULL, 1, NULL, 1);
+    xTaskCreatePinnedToCore(&cli_task, "CLI_TASK", 4096, NULL, 1, NULL, 1);
     xTaskCreatePinnedToCore(&key_press_task, "KEY_PRESS_TASK", 1024, NULL, 2, &key_press_task_handle, 1);
 
     connect_wifi();
@@ -88,6 +88,22 @@ esp_err_t str_to_parram_int(char *input, int *output_array, unsigned int array_l
         output_array[token_count] = strtol(pch, NULL, 10);
         pch = strtok(NULL, " ");
         token_count += 1;    
+    }
+    if (token_count < array_length) {
+        return ESP_FAIL;
+    }
+    return ESP_OK;
+}
+
+esp_err_t str_to_parram_str(char *input, char **output_array, unsigned int array_length)
+{
+    uint8_t token_count = 0;
+    char *pch = strtok(input, " ");
+    while (pch != NULL && token_count < array_length) {
+        printf("%s\n", pch);
+        output_array[token_count] = pch;
+        pch = strtok(NULL, " ");
+        token_count += 1;
     }
     if (token_count < array_length) {
         return ESP_FAIL;
@@ -143,6 +159,14 @@ void cli_task(void *args)
                     xSemaphoreGive(ir_mutex);
                 }
             }
+            else if (strncmp(uart_buffer, "set wifi ", strlen("set wifi ")) == 0) {
+                char *wifi_new[2];
+                if(str_to_parram_str(uart_buffer + strlen("set wifi "), wifi_new, 2) == ESP_FAIL) {
+                    continue;
+                }
+                printf(">Set WIFI SSID: %s\n", wifi_new[0]);
+                set_wifi(wifi_new[0], wifi_new[1]);
+            }            
         }
     }    
 }

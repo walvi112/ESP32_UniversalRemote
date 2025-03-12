@@ -9,7 +9,10 @@
 #include "mdns.h"
 
 static const char *TAG = "WIFI";
-static int wifi_retry = 0;
+ESP_EVENT_DEFINE_BASE(USER_EVENTS);
+static EventGroupHandle_t s_wifi_event_group;
+static const int CONNECTED_BIT = BIT0;
+
 
 static void initialise_mdns(void)
 {
@@ -26,33 +29,39 @@ static void initialise_mdns(void)
     ESP_ERROR_CHECK(mdns_service_add("UniversalRemote-WebServer", "_http", "_tcp", 80, NULL, 0));
 }
 
-
-void wifi_start_handle(void *arg, esp_event_base_t event_base,
+void wifi_event_handle(void *arg, esp_event_base_t event_base,
                       int32_t event_id, void *event_data)
 {
-  wifi_retry = 0;
-  ESP_LOGI(TAG, "Wifi starts finished"); 
-  ESP_ERROR_CHECK(esp_wifi_connect());
-}
-
-void wifi_disconnected_handle(void *arg, esp_event_base_t event_base,
-                      int32_t event_id, void *event_data) 
-{
-  wifi_event_sta_disconnected_t *event = (wifi_event_sta_disconnected_t *) event_data;
-
+  if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
+    ESP_LOGI(TAG, "Wifi starts finished"); 
+    ESP_ERROR_CHECK(esp_wifi_connect());
+  }
+  else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
+    wifi_event_sta_disconnected_t *event = (wifi_event_sta_disconnected_t *) event_data;
     ESP_LOGI(TAG, "Tried connected to %s", event->ssid);
     ESP_LOGI(TAG, "Wifi disconnected with error code %d, retrying...", event->reason);
     ESP_ERROR_CHECK(esp_wifi_connect());
-
-    return;
-}
-
-void sta_got_ip_handle(void *arg, esp_event_base_t event_base,
-                      int32_t event_id, void *event_data)
-{
-  wifi_retry = 0;
-  ip_event_got_ip_t *event = (ip_event_got_ip_t*) event_data;
-  ESP_LOGI(TAG, "Got IPv4 event: " IPSTR, IP2STR(&event->ip_info.ip));
+    xEventGroupClearBits(s_wifi_event_group, CONNECTED_BIT);
+  }
+  else if (event_base == WIFI_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
+    ip_event_got_ip_t *event = (ip_event_got_ip_t*) event_data;
+    ESP_LOGI(TAG, "Got IPv4 event: " IPSTR, IP2STR(&event->ip_info.ip));
+    xEventGroupSetBits(s_wifi_event_group, CONNECTED_BIT);
+  }
+  else if (event_base == USER_EVENTS && event_id == USER_CHANGE_WIFI) {
+    wifi_config_t *wifi_config = (wifi_config_t*) event_data;
+    uint8_t connected = false;
+    printf("SSID:%s\n", wifi_config->sta.ssid);
+    printf("PWD:%s\n", wifi_config->sta.password);
+    
+    if (xEventGroupGetBits(s_wifi_event_group) & CONNECTED_BIT) {
+      ESP_ERROR_CHECK(esp_wifi_disconnect());
+      connected = true;
+    }
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, wifi_config));
+    if (connected)
+      ESP_ERROR_CHECK(esp_wifi_connect());
+  }
 }
 
 esp_err_t connect_wifi(void) 
@@ -63,7 +72,8 @@ esp_err_t connect_wifi(void)
     ret = nvs_flash_init();
   }
   ESP_ERROR_CHECK(ret);
-  
+
+  s_wifi_event_group = xEventGroupCreate();
   ESP_ERROR_CHECK(esp_netif_init());
   ESP_ERROR_CHECK(esp_event_loop_create_default());
 
@@ -87,9 +97,10 @@ esp_err_t connect_wifi(void)
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
 
-  ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_START, &wifi_start_handle, NULL));
-  ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, &wifi_disconnected_handle, NULL));
-  ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &sta_got_ip_handle, NULL));
+  ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_START, &wifi_event_handle, NULL));
+  ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, &wifi_event_handle, NULL));
+  ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &wifi_event_handle, NULL));
+  ESP_ERROR_CHECK(esp_event_handler_register(USER_EVENTS, USER_CHANGE_WIFI, &wifi_event_handle, NULL));
   ESP_ERROR_CHECK(esp_wifi_start());
   ESP_LOGI(TAG, "Waiting for IP");
 
@@ -107,7 +118,6 @@ esp_err_t set_wifi(char *p_ssid, char *p_pwd)
   };
   memcpy(wifi_config.sta.ssid, p_ssid, sizeof(wifi_config.sta.ssid) - 1);
   memcpy(wifi_config.sta.password, p_pwd, sizeof(wifi_config.sta.password) - 1);
-  ESP_ERROR_CHECK(esp_wifi_disconnect());
-  ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
+  ESP_ERROR_CHECK(esp_event_post(USER_EVENTS, USER_CHANGE_WIFI, &wifi_config, sizeof(wifi_config_t), portMAX_DELAY));
   return ESP_OK;
 }
