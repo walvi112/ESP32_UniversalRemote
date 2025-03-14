@@ -4,8 +4,8 @@
 #include "esp_err.h"
 #include "esp_event.h"
 
-#define WIFI_SSID         "DQV11"
-#define WIFI_PWD          "712712712"
+#define WIFI_SSID         ""
+#define WIFI_PWD          ""
 
 #define MDNS_HOSTNAME      "remote"
 

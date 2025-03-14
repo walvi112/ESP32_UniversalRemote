@@ -5,10 +5,12 @@
 #include "freertos/task.h"
 #include "driver/gpio.h"
 #include "driver/uart.h"
+#include "nvs_flash.h"
 #include "irmp.h"
 #include "irsnd.h"
 #include "wifi_connect.h"
 #include "webserver.h"
+#include "ir_manage.h"
 
 #define IR_PERIOD_US        (1000000 / F_INTERRUPTS)
 #define UART_BUFFER_SIZE     2048
@@ -38,6 +40,12 @@ static void IRAM_ATTR key_isr_handler(void *args)
 
 void app_main(void)
 {   
+    esp_err_t ret = nvs_flash_init();
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        ret = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(ret);
     const uart_port_t uart_num = UART_NUM_0;
     uart_config_t uart_config = {
         .baud_rate = 115200,
@@ -76,8 +84,9 @@ void app_main(void)
     xTaskCreatePinnedToCore(&cli_task, "CLI_TASK", 4096, NULL, 1, NULL, 1);
     xTaskCreatePinnedToCore(&key_press_task, "KEY_PRESS_TASK", 1024, NULL, 2, &key_press_task_handle, 1);
 
-    connect_wifi();
-    startwebserver();
+    ESP_ERROR_CHECK(ir_storage_init());
+    ESP_ERROR_CHECK(connect_wifi());
+    ESP_ERROR_CHECK(startwebserver());
 }
 
 esp_err_t str_to_parram_int(char *input, int *output_array, unsigned int array_length)
@@ -166,6 +175,13 @@ void cli_task(void *args)
                 }
                 printf(">Set WIFI SSID: %s\n", wifi_new[0]);
                 set_wifi(wifi_new[0], wifi_new[1]);
+            }
+            else if (strncmp(uart_buffer, "add ir ", strlen("add ir ")) == 0) {
+                int ir_receive[3];
+                if (str_to_parram_int(uart_buffer + strlen("add ir "), ir_receive, 3) == ESP_FAIL) {
+                    continue;
+                }
+
             }            
         }
     }    
