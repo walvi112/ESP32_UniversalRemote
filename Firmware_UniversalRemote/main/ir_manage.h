@@ -3,13 +3,14 @@
 #include "esp_err.h"
 
 #define IR_NAMESPACE        "ir_storage"
+#define IRI_NAMESPACE       "ir_info_storage"
 #define IR_TV_NUM_REMOTE    5
 #define IR_TV_1             "ir_tv_1"
 #define IR_TV_2             "ir_tv_2"
 #define IR_TV_3             "ir_tv_3"
 #define IR_TV_4             "ir_tv_4"
 #define IR_TV_5             "ir_tv_5"
-#define IR_TV_NUM_CODE          44
+#define IR_TV_NUM_CODE       44
 
 enum {
     IR_TV_CODE_ON,
@@ -61,8 +62,14 @@ enum {
 typedef struct ir_code_t {
     uint16_t address;
     uint16_t command;
-    
 } ir_code_t;
+
+typedef struct ir_remote_t {
+    char *description;
+    uint8_t protocol;
+    uint8_t flag;
+} ir_remote_t;
+
 
 #ifdef __cplusplus
 extern "C" {

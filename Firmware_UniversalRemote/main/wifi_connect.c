@@ -43,24 +43,17 @@ void wifi_event_handle(void *arg, esp_event_base_t event_base,
     ESP_ERROR_CHECK(esp_wifi_connect());
     xEventGroupClearBits(s_wifi_event_group, CONNECTED_BIT);
   }
-  else if (event_base == WIFI_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
+  else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
     ip_event_got_ip_t *event = (ip_event_got_ip_t*) event_data;
     ESP_LOGI(TAG, "Got IPv4 event: " IPSTR, IP2STR(&event->ip_info.ip));
     xEventGroupSetBits(s_wifi_event_group, CONNECTED_BIT);
   }
   else if (event_base == USER_EVENTS && event_id == USER_CHANGE_WIFI) {
     wifi_config_t *wifi_config = (wifi_config_t*) event_data;
-    uint8_t connected = false;
-    printf("SSID:%s\n", wifi_config->sta.ssid);
-    printf("PWD:%s\n", wifi_config->sta.password);
-    
     if (xEventGroupGetBits(s_wifi_event_group) & CONNECTED_BIT) {
       ESP_ERROR_CHECK(esp_wifi_disconnect());
-      connected = true;
     }
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, wifi_config));
-    if (connected)
-      ESP_ERROR_CHECK(esp_wifi_connect());
   }
 }
 
