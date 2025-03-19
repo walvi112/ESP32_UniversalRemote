@@ -173,6 +173,15 @@ void cli_task(void *args)
                 if(str_to_parram_str(uart_buffer + strlen("set wifi "), wifi_new, 2) == ESP_FAIL) {
                     continue;
                 }
+                char *ptr;
+                ptr = strrchr(wifi_new[1], '\r');
+                if (ptr != NULL) {
+                    *ptr = '\0';
+                }
+                ptr = strrchr(wifi_new[1], '\n');
+                if (ptr != NULL) {
+                    *ptr = '\0';
+                }
                 printf(">Set WIFI SSID: %s\n", wifi_new[0]);
                 set_wifi(wifi_new[0], wifi_new[1]);
             }
