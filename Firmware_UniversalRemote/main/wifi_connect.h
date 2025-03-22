@@ -4,8 +4,10 @@
 #include "esp_err.h"
 #include "esp_event.h"
 
-#define WIFI_SSID         ""
-#define WIFI_PWD          ""
+#define WIFI_NAMESPACE    "wifi_storage"
+
+#define WIFI_SSID_KEY         "wifi_ssid"
+#define WIFI_PWD_KEY          "wifi_password"
 
 #define MDNS_HOSTNAME      "remote"
 

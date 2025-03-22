@@ -12,7 +12,7 @@ static const char *TAG = "WIFI";
 ESP_EVENT_DEFINE_BASE(USER_EVENTS);
 static EventGroupHandle_t s_wifi_event_group;
 static const int CONNECTED_BIT = BIT0;
-
+static nvs_handle_t wifi_nvs_handle;
 
 static void initialise_mdns(void)
 {
@@ -73,13 +73,36 @@ esp_err_t connect_wifi(void)
 
   wifi_config_t wifi_config = {
     .sta = {
-      .ssid = WIFI_SSID,
-      .password = WIFI_PWD,
+      .ssid = "default",
+      .password = "1234567890",
       .sort_method = WIFI_CONNECT_AP_BY_SECURITY,
       .threshold 
         .authmode = WIFI_AUTH_OPEN,
     }
   };
+
+  size_t length = 0;
+  esp_err_t err;
+  ESP_ERROR_CHECK(nvs_open(WIFI_NAMESPACE, NVS_READWRITE, &wifi_nvs_handle));
+  err = nvs_get_str(wifi_nvs_handle, WIFI_SSID_KEY, NULL, &length);
+  if (err != ESP_OK && err != ESP_ERR_NVS_NOT_FOUND) return err;
+  if (length == 0) {
+    nvs_set_str(wifi_nvs_handle, WIFI_SSID_KEY, "default");
+    ESP_ERROR_CHECK(nvs_commit(wifi_nvs_handle));
+  }
+  else {
+    ESP_ERROR_CHECK(nvs_get_str(wifi_nvs_handle, WIFI_SSID_KEY, (char*) &wifi_config.sta.ssid, &length));
+  }
+  err = nvs_get_str(wifi_nvs_handle, WIFI_PWD_KEY, NULL, &length);
+  if (err != ESP_OK && err != ESP_ERR_NVS_NOT_FOUND) return err;
+  if (length == 0) {
+    nvs_set_str(wifi_nvs_handle, WIFI_PWD_KEY, "1234567890");
+    ESP_ERROR_CHECK(nvs_commit(wifi_nvs_handle));
+  }
+  else {
+    ESP_ERROR_CHECK(nvs_get_str(wifi_nvs_handle, WIFI_PWD_KEY, (char*) &wifi_config.sta.password, &length));
+  }
+
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
 
@@ -105,5 +128,8 @@ esp_err_t set_wifi(char *p_ssid, char *p_pwd)
   memcpy(wifi_config.sta.ssid, p_ssid, sizeof(wifi_config.sta.ssid) - 1);
   memcpy(wifi_config.sta.password, p_pwd, sizeof(wifi_config.sta.password) - 1);
   ESP_ERROR_CHECK(esp_event_post(USER_EVENTS, USER_CHANGE_WIFI, &wifi_config, sizeof(wifi_config_t), portMAX_DELAY));
+  ESP_ERROR_CHECK(nvs_set_str(wifi_nvs_handle, WIFI_SSID_KEY, p_ssid));
+  ESP_ERROR_CHECK(nvs_set_str(wifi_nvs_handle, WIFI_PWD_KEY, p_pwd));
+  ESP_ERROR_CHECK(nvs_commit(wifi_nvs_handle));
   return ESP_OK;
 }

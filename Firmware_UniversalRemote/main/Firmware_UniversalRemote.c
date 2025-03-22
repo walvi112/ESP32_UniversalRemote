@@ -182,8 +182,13 @@ void cli_task(void *args)
                 if (ptr != NULL) {
                     *ptr = '\0';
                 }
-                printf(">Set WIFI SSID: %s\n", wifi_new[0]);
-                set_wifi(wifi_new[0], wifi_new[1]);
+                if (strlen(wifi_new[0]) > 31 || strlen(wifi_new[1]) > 63) {
+                    printf(">SSID or PWD to long.\n");    
+                }
+                else {
+                    printf(">Set WIFI SSID: %s\n", wifi_new[0]);
+                    set_wifi(wifi_new[0], wifi_new[1]);
+                }
             }
             else if (strncmp(uart_buffer, "add ir ", strlen("add ir ")) == 0) {
                 int ir_receive[3];
