@@ -107,11 +107,11 @@ esp_err_t str_to_parram_int(char *input, int *output_array, unsigned int array_l
 esp_err_t str_to_parram_str(char *input, char **output_array, unsigned int array_length)
 {
     uint8_t token_count = 0;
-    char *pch = strtok(input, " ");
+    char *pch = strtok(input, "+");
     while (pch != NULL && token_count < array_length) {
         printf("%s\n", pch);
         output_array[token_count] = pch;
-        pch = strtok(NULL, " ");
+        pch = strtok(NULL, "+");
         token_count += 1;
     }
     if (token_count < array_length) {
@@ -171,6 +171,7 @@ void cli_task(void *args)
             else if (strncmp(uart_buffer, "set wifi ", strlen("set wifi ")) == 0) {
                 char *wifi_new[2];
                 if(str_to_parram_str(uart_buffer + strlen("set wifi "), wifi_new, 2) == ESP_FAIL) {
+                    printf(">Format should be: set wifi ssid+pwd.\n");
                     continue;
                 }
                 char *ptr;
