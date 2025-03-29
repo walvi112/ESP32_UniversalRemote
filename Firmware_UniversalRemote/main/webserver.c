@@ -91,6 +91,15 @@ esp_err_t startwebserver(void)
     };
     httpd_register_uri_handler(server, &tv_remote);
 
+    httpd_uri_t add_tv_remote = {
+        .uri = "/addtv/*",
+        .method = HTTP_GET,
+        .handler = http_resp_tv_remote,
+        .user_ctx = NULL,
+
+    };
+    httpd_register_uri_handler(server, &add_tv_remote);
+
     httpd_uri_t ac_remote = {
         .uri = "/ac/*",
         .method = HTTP_GET,

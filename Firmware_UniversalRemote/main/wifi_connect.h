@@ -6,10 +6,10 @@
 
 #define WIFI_NAMESPACE    "wifi_storage"
 
-#define WIFI_SSID_KEY         "wifi_ssid"
-#define WIFI_PWD_KEY          "wifi_password"
+#define WIFI_SSID_KEY     "wifi_ssid"
+#define WIFI_PWD_KEY      "wifi_password"
 
-#define MDNS_HOSTNAME      "remote"
+#define MDNS_HOSTNAME     "remote"
 
 ESP_EVENT_DECLARE_BASE(USER_EVENTS);
 
