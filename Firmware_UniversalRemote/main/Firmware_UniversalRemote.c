@@ -1,31 +1,24 @@
 #include <stdio.h>
 #include <stdint.h>
-#include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"
 #include "driver/uart.h"
 #include "nvs_flash.h"
-#include "irmp.h"
-#include "irsnd.h"
 #include "wifi_connect.h"
 #include "webserver.h"
 #include "ir_manage.h"
 
-#define IR_PERIOD_US        (1000000 / F_INTERRUPTS)
 #define UART_BUFFER_SIZE     2048
 
 #define LED_PIN              GPIO_NUM_17
 #define KEY_PIN              GPIO_NUM_16
 
 IRMP_DATA irmp_data;
-esp_timer_handle_t ir_timer_handle;
 TaskHandle_t key_press_task_handle;
 
-QueueHandle_t ir_mutex;
 char uart_buffer[UART_BUFFER_SIZE];
 
-void ir_ISR(void *args);
 void cli_task(void *args);
 void key_press_task(void *args);
 
@@ -46,6 +39,7 @@ void app_main(void)
         ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK(ret);
+
     const uart_port_t uart_num = UART_NUM_0;
     uart_config_t uart_config = {
         .baud_rate = 115200,
@@ -69,24 +63,15 @@ void app_main(void)
 
     gpio_install_isr_service(ESP_INTR_FLAG_IRAM);
     gpio_isr_handler_add(KEY_PIN, key_isr_handler, (void*) KEY_PIN);
-
-    irmp_init();
-    irsnd_init();
-    esp_timer_create_args_t ir_timer_args;
-    ir_timer_args.callback = (void*) &ir_ISR;
-    ir_timer_args.name = "ir_ISR";
-    esp_timer_create(&ir_timer_args, &ir_timer_handle);
-    esp_timer_start_periodic(ir_timer_handle, IR_PERIOD_US);
-
     gpio_dump_io_configuration(stdout, (1ULL << LED_PIN) | (1ULL << KEY_PIN));
-    ir_mutex = xSemaphoreCreateMutex();
 
-    xTaskCreatePinnedToCore(&cli_task, "CLI_TASK", 4096, NULL, 1, NULL, 1);
-    xTaskCreatePinnedToCore(&key_press_task, "KEY_PRESS_TASK", 1024, NULL, 2, &key_press_task_handle, 1);
-
+    ESP_ERROR_CHECK(ir_init());
     ESP_ERROR_CHECK(ir_storage_init());
     ESP_ERROR_CHECK(connect_wifi());
     ESP_ERROR_CHECK(startwebserver());
+
+    xTaskCreatePinnedToCore(&cli_task, "CLI_TASK", 4096, NULL, 1, NULL, 1);
+    xTaskCreatePinnedToCore(&key_press_task, "KEY_PRESS_TASK", 1024, NULL, 2, &key_press_task_handle, 1);
 }
 
 esp_err_t str_to_parram_int(char *input, int *output_array, unsigned int array_length)
@@ -118,13 +103,6 @@ esp_err_t str_to_parram_str(char *input, char **output_array, unsigned int array
         return ESP_FAIL;
     }
     return ESP_OK;
-}
-
-void ir_ISR(void *args)
-{
-    if (!irsnd_ISR()) {                                   
-        irmp_ISR();                     
-    }
 }
 
 void key_press_task(void *args)

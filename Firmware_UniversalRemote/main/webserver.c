@@ -1,6 +1,7 @@
 #include "webserver.h"
 #include "esp_http_server.h"
 #include "esp_log.h"
+#include "ir_manage.h"
 
 static const char *TAG = "WEBSERVER";
 
@@ -41,6 +42,33 @@ static esp_err_t http_resp_tv_remote(httpd_req_t *req)
     return ESP_FAIL;
 }
 
+static esp_err_t http_resp_tv_remote_command(httpd_req_t *req) 
+{
+    char *pch =strrchr(req->uri,'/');
+    long num_dev = strtol(pch + 1, NULL, 10);
+    
+    long ir_code = 0;
+    char buf[32];
+    int ret, remaining = req->content_len;
+    while (remaining > 0) 
+    {
+        if ((ret = httpd_req_recv(req, buf, (remaining > sizeof(buf) ? remaining : sizeof(buf)))) <= 0) {
+            if (ret == HTTPD_SOCK_ERR_TIMEOUT) {
+                continue;
+            }
+        return ESP_FAIL;
+        }
+        remaining -= ret;
+    }
+    ir_code = strtol(buf, NULL, 10);
+    if (strcmp(req->user_ctx, "command") == 0)
+        ir_send_code_tv(ir_code, num_dev);
+    else
+        ir_add_code_tv_detect(ir_code, num_dev);
+    httpd_resp_set_status(req, "200 OK");
+    return ESP_OK;
+}
+
 static esp_err_t http_resp_ac_remote(httpd_req_t *req) 
 {   
     char *pch =strrchr(req->uri,'/');
@@ -66,13 +94,22 @@ esp_err_t startwebserver(void)
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.uri_match_fn = httpd_uri_match_wildcard;
     ESP_LOGI(TAG, "Starting server on port: '%d'", config.server_port);
-
+    
     if (httpd_start(&server, &config) != ESP_OK) {
         ESP_LOGE(TAG, "Error starting server");
         return ESP_FAIL;
     }
-
+    
     ESP_LOGI(TAG, "Registering URI handlers");
+    httpd_uri_t favicon = {
+        .uri = "/favicon.ico",
+        .method = HTTP_GET,
+        .handler = http_resp_favicon,
+        .user_ctx = NULL,
+    
+    };
+    httpd_register_uri_handler(server, &favicon);
+    
     httpd_uri_t root = {
         .uri = "/",
         .method = HTTP_GET,
@@ -109,14 +146,21 @@ esp_err_t startwebserver(void)
     };
     httpd_register_uri_handler(server, &ac_remote);
 
-    httpd_uri_t favicon = {
-        .uri = "/favicon.ico",
-        .method = HTTP_GET,
-        .handler = http_resp_favicon,
-        .user_ctx = NULL,
-
+    httpd_uri_t command_tv = {
+        .uri = "/command/tv/*",
+        .method = HTTP_POST,
+        .handler = http_resp_tv_remote_command,
+        .user_ctx = "command",
     };
-    httpd_register_uri_handler(server, &favicon);
+    httpd_register_uri_handler(server, &command_tv);
+
+    httpd_uri_t add_tv = {
+        .uri = "/add/tv/*",
+        .method = HTTP_POST,
+        .handler = http_resp_tv_remote_command,
+        .user_ctx = "add",
+    };
+    httpd_register_uri_handler(server, &add_tv);
 
     return ESP_OK;
 }

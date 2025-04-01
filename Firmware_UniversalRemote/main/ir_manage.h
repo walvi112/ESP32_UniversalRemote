@@ -1,6 +1,11 @@
 #ifndef IR_MANAGE_H
 #define IR_MANAGE_H
+#include "freertos/FreeRTOS.h"
 #include "esp_err.h"
+#include "irmp.h"
+#include "irsnd.h"
+
+#define IR_PERIOD_US        (1000000 / F_INTERRUPTS)
 
 #define IR_NAMESPACE        "ir_storage"
 #define IRI_NAMESPACE       "ir_info_storage"
@@ -11,6 +16,7 @@
 #define IR_TV_4             "ir_tv_4"
 #define IR_TV_5             "ir_tv_5"
 #define IR_TV_NUM_CODE       44
+#define IR_INFO_LEN          255
 
 enum {
     IR_TV_CODE_ON,
@@ -59,24 +65,20 @@ enum {
     IR_TV_CODE_NEXT,
 };
 
-typedef struct ir_code_t {
-    uint16_t address;
-    uint16_t command;
-} ir_code_t;
 
-typedef struct ir_remote_t {
-    char *description;
-    uint8_t protocol;
-    uint8_t flag;
-} ir_remote_t;
-
+extern QueueHandle_t ir_mutex;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+esp_err_t ir_init(void);
 esp_err_t ir_storage_init(void);
-
+esp_err_t ir_add_code_tv(IRMP_DATA ir_code, uint8_t ir_code_id, uint8_t ir_remote_id);
+esp_err_t ir_add_code_info_tv(char *info, uint8_t ir_remote_id);
+esp_err_t ir_commit_tv(uint8_t ir_remote_id);
+esp_err_t ir_send_code_tv(long code, long ir_remote_id);
+esp_err_t ir_add_code_tv_detect(long ir_code, long ir_remote_id);
 
 #ifdef __cplusplus
 }
