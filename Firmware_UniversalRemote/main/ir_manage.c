@@ -3,9 +3,10 @@
 #include "nvs.h"
 #include "esp_timer.h"
 
-static const char *TAG = "IR_MANAGE";
 QueueHandle_t ir_mutex;
-esp_timer_handle_t ir_timer_handle;
+static const char *TAG = "IR_MANAGE";
+static esp_timer_handle_t ir_timer_handle;
+static esp_timer_create_args_t ir_timer_args;
 static const char *ir_tv_key_name[IR_TV_NUM_REMOTE] = {IR_TV_1, IR_TV_2, IR_TV_3, IR_TV_4, IR_TV_5};
 static nvs_handle_t ir_handle;
 static nvs_handle_t iri_handle;
@@ -26,11 +27,10 @@ esp_err_t ir_init(void)
         return ESP_ERR_NO_MEM;
     irmp_init();
     irsnd_init();
-    esp_timer_create_args_t ir_timer_args;
     ir_timer_args.callback = (void*) &ir_ISR;
     ir_timer_args.name = "ir_ISR";
     ESP_ERROR_CHECK(esp_timer_create(&ir_timer_args, &ir_timer_handle));
-    // ESP_ERROR_CHECK(esp_timer_start_periodic(ir_timer_handle, IR_PERIOD_US));
+    ESP_ERROR_CHECK(esp_timer_start_periodic(ir_timer_handle, IR_PERIOD_US));
     return ESP_OK;
 }
 
