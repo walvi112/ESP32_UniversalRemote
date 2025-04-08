@@ -8,15 +8,11 @@
 #include "wifi_connect.h"
 #include "webserver.h"
 #include "ir_manage.h"
+#include "pin_config.h"
 
 #define UART_BUFFER_SIZE     2048
 
-#define LED_PIN              GPIO_NUM_17
-#define KEY_PIN              GPIO_NUM_16
-
-IRMP_DATA irmp_data;
 TaskHandle_t key_press_task_handle;
-
 char uart_buffer[UART_BUFFER_SIZE];
 
 void cli_task(void *args);

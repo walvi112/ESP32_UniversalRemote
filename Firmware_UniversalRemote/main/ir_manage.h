@@ -67,6 +67,7 @@ enum {
 
 
 extern QueueHandle_t ir_mutex;
+extern IRMP_DATA irmp_data;
 
 #ifdef __cplusplus
 extern "C" {

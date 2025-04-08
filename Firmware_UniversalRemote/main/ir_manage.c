@@ -2,8 +2,10 @@
 #include "esp_log.h"
 #include "nvs.h"
 #include "esp_timer.h"
+#include "pin_config.h"
 
 QueueHandle_t ir_mutex;
+IRMP_DATA irmp_data;
 static const char *TAG = "IR_MANAGE";
 static esp_timer_handle_t ir_timer_handle;
 static esp_timer_create_args_t ir_timer_args;
@@ -12,6 +14,24 @@ static nvs_handle_t ir_handle;
 static nvs_handle_t iri_handle;
 static IRMP_DATA ir_code_tv[IR_TV_NUM_REMOTE][IR_TV_NUM_CODE];
 static char ir_code_tv_info[IR_TV_NUM_REMOTE][IR_INFO_LEN];
+static TaskHandle_t ir_receive_task_handle;
+
+void ir_receive_task(void *args)
+{
+    while (1)
+    {
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        TickType_t now_tick =  xTaskGetTickCount();
+        while ((xTaskGetTickCount() - now_tick) <= (5000 / portTICK_PERIOD_MS)) 
+        {
+            if (irmp_get_data(&irmp_data) == TRUE) {
+                printf("%d %d %d\n", irmp_data.protocol, irmp_data.address, irmp_data.command);
+                break;
+            }
+        }
+        xSemaphoreGive(ir_mutex);
+    }
+}
 
 void ir_ISR(void *args)
 {
@@ -31,6 +51,7 @@ esp_err_t ir_init(void)
     ir_timer_args.name = "ir_ISR";
     ESP_ERROR_CHECK(esp_timer_create(&ir_timer_args, &ir_timer_handle));
     ESP_ERROR_CHECK(esp_timer_start_periodic(ir_timer_handle, IR_PERIOD_US));
+    xTaskCreatePinnedToCore(&ir_receive_task, "IR_RECEIVE_TASK", 1024, NULL, 1, &ir_receive_task_handle, 1);
     return ESP_OK;
 }
 
@@ -113,8 +134,7 @@ esp_err_t ir_send_code_tv(long code, long ir_remote_id)
         irsnd_send_data (&ir_to_send, TRUE);
         xSemaphoreGive(ir_mutex);
     }
-    else
-    {
+    else {
         ESP_LOGE(TAG, "Failed to obtain ir_mutex");
     }
     return ESP_OK;
@@ -122,5 +142,11 @@ esp_err_t ir_send_code_tv(long code, long ir_remote_id)
 
 esp_err_t ir_add_code_tv_detect(long ir_code, long ir_remote_id)
 {
+    if (xSemaphoreTake(ir_mutex, 10 / portTICK_PERIOD_MS) == pdTRUE) {
+        xTaskNotifyGive(ir_receive_task_handle);
+    }
+    else {
+        ESP_LOGE(TAG, "Failed to obtain ir_mutex");
+    }
     return ESP_OK;
 }
