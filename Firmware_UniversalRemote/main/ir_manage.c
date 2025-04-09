@@ -12,7 +12,9 @@ static esp_timer_create_args_t s_ir_timer_args;
 static nvs_handle_t s_ir_handle;
 static nvs_handle_t s_iri_handle;
 
-QueueHandle_t ir_mutex;
+SemaphoreHandle_t  ir_mutex;
+static SemaphoreHandle_t ir_send_semp;
+
 static TaskHandle_t s_ir_receive_task_handle;
 
 IRMP_DATA irmp_data;
@@ -28,15 +30,20 @@ void ir_receive_task(void *args)
     while (1)
     {
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-        
         TickType_t start_tick =  xTaskGetTickCount();
         TickType_t now_tick = start_tick;
         TickType_t previous_tick = 0;
         int led_state =  gpio_get_level(LED_PIN);
+        uint8_t is_ir_detected = 0;
         while ((now_tick - start_tick) <= (5000 / portTICK_PERIOD_MS)) 
         {
-            if (irmp_get_data(&irmp_data) == TRUE) {
+            if (xSemaphoreTake(ir_mutex, 10 / portTICK_PERIOD_MS) == pdTRUE) {
+                is_ir_detected = irmp_get_data(&irmp_data);
+                xSemaphoreGive(ir_mutex);
+            }     
+            if (is_ir_detected == TRUE) {
                 ir_add_code_tv(irmp_data, s_ir_code_id, s_ir_remote_id);
+                ir_commit_tv(s_ir_remote_id);
                 break;
             }
             if ((now_tick - previous_tick) * portTICK_PERIOD_MS >= 200) {
@@ -47,9 +54,8 @@ void ir_receive_task(void *args)
             vTaskDelay(10 / portTICK_PERIOD_MS);
             now_tick = xTaskGetTickCount();
         }
-        xSemaphoreGive(ir_mutex);
-        gpio_set_level(LED_PIN, 1);
-        
+        gpio_set_level(LED_PIN, 1);   
+        xSemaphoreGive(ir_send_semp);
     }
 }
 
@@ -65,13 +71,17 @@ esp_err_t ir_init(void)
     ir_mutex = xSemaphoreCreateMutex();
     if (ir_mutex == NULL)
         return ESP_ERR_NO_MEM;
+    ir_send_semp = xSemaphoreCreateBinary();
+    if (ir_send_semp == NULL)
+        return ESP_ERR_NO_MEM;
+    xSemaphoreGive(ir_send_semp);    
     irmp_init();
     irsnd_init();
     s_ir_timer_args.callback = (void*) &ir_ISR;
     s_ir_timer_args.name = "ir_ISR";
     ESP_ERROR_CHECK(esp_timer_create(&s_ir_timer_args, &s_ir_timer_handle));
     ESP_ERROR_CHECK(esp_timer_start_periodic(s_ir_timer_handle, IR_PERIOD_US));
-    xTaskCreatePinnedToCore(&ir_receive_task, "IR_RECEIVE_TASK", 1024, NULL, 2, &s_ir_receive_task_handle, 1);
+    xTaskCreatePinnedToCore(&ir_receive_task, "IR_RECEIVE_TASK", 2048, NULL, 2, &s_ir_receive_task_handle, 1);
     return ESP_OK;
 }
 
@@ -85,7 +95,6 @@ esp_err_t ir_storage_init(void)
     for (int i = 0; i < IR_TV_NUM_REMOTE; i++) {
         ir_code_array_size = 0;
         err = nvs_get_blob(s_ir_handle, s_ir_tv_key_name_array[i], NULL, &ir_code_array_size);
-        ESP_LOGI(TAG, "Checking IR code storage");
         if (err != ESP_OK && err != ESP_ERR_NVS_NOT_FOUND) return err;
         if (ir_code_array_size == 0) {
             ESP_LOGI(TAG, "Empty IR code detected in TV remote %d", i + 1);
@@ -95,7 +104,6 @@ esp_err_t ir_storage_init(void)
         
         ir_code_array_size = 0;
         err = nvs_get_str(s_iri_handle, s_ir_tv_key_name_array[i], NULL, &ir_code_array_size);
-        ESP_LOGI(TAG, "Checking IR information storage");
         if (err != ESP_OK && err != ESP_ERR_NVS_NOT_FOUND) return err;
         if (ir_code_array_size == 0) {
             ESP_LOGI(TAG, "Empty IR information detected in TV remote %d", i + 1);
@@ -134,11 +142,11 @@ esp_err_t ir_commit_tv(uint8_t ir_remote_id)
 
 esp_err_t ir_send_code_tv(long ir_code_id, long ir_remote_id)
 {
-    if (ir_code_id >= IR_TV_NUM_CODE || ir_code_id <= 0) {
+    if ( ir_code_id < 0 || ir_code_id >= IR_TV_NUM_CODE) {
         ESP_LOGE(TAG, "Invalid ir code id");
         return ESP_FAIL;
     }
-    if (ir_remote_id >= IR_TV_NUM_REMOTE || ir_remote_id <= 0) {
+    if (ir_remote_id < 0 || ir_remote_id >= IR_TV_NUM_REMOTE) {
         ESP_LOGE(TAG, "Invalid ir remote id");
         return ESP_FAIL;
     }
@@ -168,7 +176,7 @@ esp_err_t ir_add_code_tv_detect(long ir_code_id, long ir_remote_id)
         ESP_LOGE(TAG, "Invalid ir remote id");
         return ESP_FAIL;
     }
-    if (xSemaphoreTake(ir_mutex, 10 / portTICK_PERIOD_MS) == pdTRUE) {
+    if (xSemaphoreTake(ir_send_semp, 10 / portTICK_PERIOD_MS) == pdTRUE) {
         s_ir_code_id = ir_code_id;
         s_ir_remote_id = ir_remote_id;
         xTaskNotifyGive(s_ir_receive_task_handle);

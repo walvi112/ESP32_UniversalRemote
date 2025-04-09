@@ -45,7 +45,7 @@ static esp_err_t http_resp_tv_remote(httpd_req_t *req)
 static esp_err_t http_resp_tv_remote_command(httpd_req_t *req) 
 {
     char *pch =strrchr(req->uri,'/');
-    long num_dev = strtol(pch + 1, NULL, 10);
+    long num_dev = strtol(pch + 1, NULL, 10) - 1;
     
     long ir_code = 0;
     char buf[32];
@@ -60,6 +60,7 @@ static esp_err_t http_resp_tv_remote_command(httpd_req_t *req)
         }
         remaining -= ret;
     }
+
     ir_code = strtol(buf, NULL, 10);
     if (strcmp(req->user_ctx, "command") == 0) {
         ESP_LOGI(TAG, "Sending IR code");
@@ -68,7 +69,7 @@ static esp_err_t http_resp_tv_remote_command(httpd_req_t *req)
         ESP_LOGI(TAG, "Adding IR code");
         ir_add_code_tv_detect(ir_code, num_dev);
     }    
-    httpd_resp_set_status(req, "200 OK");
+    httpd_resp_send(req, NULL, 0);    
     return ESP_OK;
 }
 
