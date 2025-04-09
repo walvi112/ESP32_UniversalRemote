@@ -1,6 +1,7 @@
 #ifndef IR_MANAGE_H
 #define IR_MANAGE_H
 #include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "esp_err.h"
 #include "irmp.h"
 #include "irsnd.h"
@@ -78,8 +79,8 @@ esp_err_t ir_storage_init(void);
 esp_err_t ir_add_code_tv(IRMP_DATA ir_code, uint8_t ir_code_id, uint8_t ir_remote_id);
 esp_err_t ir_add_code_info_tv(char *info, uint8_t ir_remote_id);
 esp_err_t ir_commit_tv(uint8_t ir_remote_id);
-esp_err_t ir_send_code_tv(long code, long ir_remote_id);
-esp_err_t ir_add_code_tv_detect(long ir_code, long ir_remote_id);
+esp_err_t ir_send_code_tv(long ir_code_id, long ir_remote_id);
+esp_err_t ir_add_code_tv_detect(long ir_code_id, long ir_remote_id);
 
 #ifdef __cplusplus
 }

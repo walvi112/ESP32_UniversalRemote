@@ -61,10 +61,13 @@ static esp_err_t http_resp_tv_remote_command(httpd_req_t *req)
         remaining -= ret;
     }
     ir_code = strtol(buf, NULL, 10);
-    if (strcmp(req->user_ctx, "command") == 0)
-        ir_send_code_tv(ir_code, num_dev);
-    else
+    if (strcmp(req->user_ctx, "command") == 0) {
+        ESP_LOGI(TAG, "Sending IR code");
+        ir_send_code_tv(ir_code, num_dev); 
+    } else {
+        ESP_LOGI(TAG, "Adding IR code");
         ir_add_code_tv_detect(ir_code, num_dev);
+    }    
     httpd_resp_set_status(req, "200 OK");
     return ESP_OK;
 }
