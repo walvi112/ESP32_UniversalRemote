@@ -6,18 +6,19 @@
 #include "irmp.h"
 #include "irsnd.h"
 
-#define IR_PERIOD_US        (1000000 / F_INTERRUPTS)
+#define IR_PERIOD_US                (1000000 / F_INTERRUPTS)
+#define IR_RECEIVE_PERIOD_MS        5000
 
-#define IR_NAMESPACE        "ir_storage"
-#define IRI_NAMESPACE       "ir_info_storage"
-#define IR_TV_NUM_REMOTE    5
-#define IR_TV_1             "ir_tv_1"
-#define IR_TV_2             "ir_tv_2"
-#define IR_TV_3             "ir_tv_3"
-#define IR_TV_4             "ir_tv_4"
-#define IR_TV_5             "ir_tv_5"
-#define IR_TV_NUM_CODE       44
-#define IR_INFO_LEN          255
+#define IR_NAMESPACE                "ir_storage"
+#define IRI_NAMESPACE               "ir_info_storage"
+#define IR_TV_1                     "ir_tv_1"
+#define IR_TV_2                     "ir_tv_2"
+#define IR_TV_3                     "ir_tv_3"
+#define IR_TV_4                     "ir_tv_4"
+#define IR_TV_5                     "ir_tv_5"
+#define IR_TV_NUM_REMOTE            5
+#define IR_TV_NUM_CODE              44
+#define IR_INFO_LEN                 255
 
 enum {
     IR_TV_CODE_ON,

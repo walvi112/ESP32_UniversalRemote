@@ -5,15 +5,15 @@
 #include "esp_event.h"
 #include "esp_wifi.h"
 
-#define WIFI_NAMESPACE    "wifi_storage"
+#define WIFI_NAMESPACE            "wifi_storage"
 
-#define WIFI_SSID_KEY     "wifi_ssid"
-#define WIFI_PWD_KEY      "wifi_password"
+#define WIFI_SSID_KEY             "wifi_ssid"
+#define WIFI_PWD_KEY              "wifi_password"
 
-#define MAX_WIFI_SSID_LENGTH    MAX_SSID_LEN
-#define MAX_WIFI_PWD_LENGTH     MAX_PASSPHRASE_LEN
+#define MAX_WIFI_SSID_LENGTH      MAX_SSID_LEN
+#define MAX_WIFI_PWD_LENGTH       MAX_PASSPHRASE_LEN
 
-#define MDNS_HOSTNAME     "remote"
+#define MDNS_HOSTNAME             "remote"
 
 ESP_EVENT_DECLARE_BASE(USER_EVENTS);
 

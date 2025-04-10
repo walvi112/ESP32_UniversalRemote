@@ -13,29 +13,29 @@ static const char *TAG = "WIFI";
 ESP_EVENT_DEFINE_BASE(USER_EVENTS);
 static EventGroupHandle_t s_wifi_event_group;
 static const int S_CONNECTED_BIT = BIT0;
-static const int S_ESPTOUCH_DISABLE_BIT = BIT1;
+static const int S_ESPTOUCH_START_BIT = BIT1;
 static const int S_ESPTOUCH_DONE_BIT = BIT2;
-static const int S_ESPTOUCH_DELETED_BIT = BIT3;
+
 
 static nvs_handle_t s_wifi_nvs_handle;
 
 static void smartconfig_task(void *args)
 {
   EventBits_t uxBits;
-  xEventGroupClearBits(s_wifi_event_group, S_ESPTOUCH_DISABLE_BIT | S_ESPTOUCH_DELETED_BIT);
-  ESP_ERROR_CHECK( esp_smartconfig_set_type(SC_TYPE_ESPTOUCH));
+  xEventGroupSetBits(s_wifi_event_group, S_ESPTOUCH_START_BIT);
+  ESP_ERROR_CHECK(esp_smartconfig_set_type(SC_TYPE_ESPTOUCH));
   smartconfig_start_config_t cfg = SMARTCONFIG_START_CONFIG_DEFAULT();
-  ESP_ERROR_CHECK( esp_smartconfig_start(&cfg) );
+  ESP_ERROR_CHECK(esp_smartconfig_start(&cfg));
   while (1) {
-      uxBits = xEventGroupWaitBits(s_wifi_event_group, S_CONNECTED_BIT | S_ESPTOUCH_DONE_BIT | S_ESPTOUCH_DISABLE_BIT, true, false, portMAX_DELAY);
+      uxBits = xEventGroupWaitBits(s_wifi_event_group, S_CONNECTED_BIT | S_ESPTOUCH_DONE_BIT, true, false, portMAX_DELAY);
       if(uxBits & S_CONNECTED_BIT) {
           ESP_LOGI(TAG, "WiFi Connected to ap");
       }
-      if(uxBits & S_ESPTOUCH_DONE_BIT || uxBits & S_ESPTOUCH_DISABLE_BIT) {
+      if(uxBits & S_ESPTOUCH_DONE_BIT) {
           ESP_LOGI(TAG, "smartconfig over");
           esp_smartconfig_stop();
+          xEventGroupClearBits(s_wifi_event_group, S_ESPTOUCH_START_BIT);
           vTaskDelete(NULL);
-          xEventGroupSetBits(s_wifi_event_group, S_ESPTOUCH_DELETED_BIT);
       }
   }
 }
@@ -82,11 +82,7 @@ void wifi_event_handle(void *arg, esp_event_base_t event_base,
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, wifi_config));
   } 
   else if (event_base == USER_EVENTS && event_id == USER_WIFI_BTN) {
-    // if (xEventGroupGetBits(s_wifi_event_group) & S_CONNECTED_BIT) {
-    //   ESP_ERROR_CHECK(esp_wifi_disconnect());
-    // }
     ESP_ERROR_CHECK(esp_wifi_disconnect());
-    xEventGroupWaitBits(s_wifi_event_group, S_ESPTOUCH_DELETED_BIT, true, false, portMAX_DELAY);
     xTaskCreatePinnedToCore(smartconfig_task, "SMART_CONFIG_TASK", 4096, NULL, 3, NULL, 0);
   } 
   else if (event_base == SC_EVENT && event_id == SC_EVENT_SCAN_DONE) {
@@ -132,7 +128,6 @@ void wifi_event_handle(void *arg, esp_event_base_t event_base,
 esp_err_t connect_wifi(void) 
 {
   s_wifi_event_group = xEventGroupCreate();
-  xEventGroupSetBits(s_wifi_event_group, S_ESPTOUCH_DELETED_BIT);
   ESP_ERROR_CHECK(esp_netif_init());
   ESP_ERROR_CHECK(esp_event_loop_create_default());
 
@@ -208,8 +203,9 @@ esp_err_t set_wifi(char *p_ssid, char *p_pwd)
 
 esp_err_t reset_wifi()
 {
-  xEventGroupClearBits(s_wifi_event_group, S_ESPTOUCH_DONE_BIT);
-  xEventGroupSetBits(s_wifi_event_group, S_ESPTOUCH_DISABLE_BIT);
-  ESP_ERROR_CHECK(esp_event_post(USER_EVENTS, USER_WIFI_BTN, NULL, 0, portMAX_DELAY));
+  if ((xEventGroupGetBits(s_wifi_event_group) & S_ESPTOUCH_START_BIT) == 0) {
+    ESP_LOGI(TAG, "Not start");
+    ESP_ERROR_CHECK(esp_event_post(USER_EVENTS, USER_WIFI_BTN, NULL, 0, portMAX_DELAY));
+  }
   return ESP_OK;
 }

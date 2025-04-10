@@ -35,7 +35,7 @@ void ir_receive_task(void *args)
         TickType_t previous_tick = 0;
         int led_state =  gpio_get_level(LED_PIN);
         uint8_t is_ir_detected = 0;
-        while ((now_tick - start_tick) <= (5000 / portTICK_PERIOD_MS)) 
+        while ((now_tick - start_tick) <= (IR_RECEIVE_PERIOD_MS / portTICK_PERIOD_MS)) 
         {
             if (xSemaphoreTake(ir_mutex, 10 / portTICK_PERIOD_MS) == pdTRUE) {
                 is_ir_detected = irmp_get_data(&irmp_data);

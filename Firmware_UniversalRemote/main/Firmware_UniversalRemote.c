@@ -104,11 +104,17 @@ esp_err_t str_to_parram_str(char *input, char **output_array, unsigned int array
 
 void key_press_task(void *args)
 {
+    TickType_t now_tick = 0;
+    TickType_t previous_tick = 0;
     while (1)
     {
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-        printf("User key pressed\n");
-        reset_wifi();
+        now_tick = xTaskGetTickCount();
+        if ((now_tick - previous_tick) >= (DEBOUNCE_PERIOD_MS / portTICK_PERIOD_MS)) {
+            previous_tick = now_tick;
+            printf("User key pressed\n");
+            reset_wifi();
+        }
     }
 }
 
@@ -184,6 +190,10 @@ void cli_task(void *args)
             else if (strncmp(uart_buffer, "restart", strlen("restart")) == 0) {
                 printf(">Restart device.\n");
                 esp_restart();
+            }
+            else if (strncmp(uart_buffer, "reset wifi", strlen("reset wifi")) == 0) {
+                printf(">Reset wifi.\n");
+                reset_wifi();
             }
         }
     }    
