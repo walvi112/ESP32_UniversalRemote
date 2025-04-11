@@ -23,8 +23,9 @@ static void smartconfig_task(void *args)
 {
   EventBits_t uxBits;
   xEventGroupSetBits(s_wifi_event_group, S_ESPTOUCH_START_BIT);
-  ESP_ERROR_CHECK(esp_smartconfig_set_type(SC_TYPE_ESPTOUCH));
+  ESP_ERROR_CHECK(esp_smartconfig_set_type(SC_TYPE_ESPTOUCH_V2));
   smartconfig_start_config_t cfg = SMARTCONFIG_START_CONFIG_DEFAULT();
+  ESP_ERROR_CHECK(esp_esptouch_set_timeout(30));
   ESP_ERROR_CHECK(esp_smartconfig_start(&cfg));
   while (1) {
       uxBits = xEventGroupWaitBits(s_wifi_event_group, S_CONNECTED_BIT | S_ESPTOUCH_DONE_BIT, true, false, portMAX_DELAY);
@@ -34,7 +35,7 @@ static void smartconfig_task(void *args)
       if(uxBits & S_ESPTOUCH_DONE_BIT) {
           ESP_LOGI(TAG, "smartconfig over");
           esp_smartconfig_stop();
-          xEventGroupClearBits(s_wifi_event_group, S_ESPTOUCH_START_BIT);
+          xEventGroupClearBits(s_wifi_event_group, S_ESPTOUCH_START_BIT | S_ESPTOUCH_DONE_BIT);
           vTaskDelete(NULL);
       }
   }
@@ -63,10 +64,11 @@ void wifi_event_handle(void *arg, esp_event_base_t event_base,
     ESP_ERROR_CHECK(esp_wifi_connect());
   } 
   else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
+    if (xEventGroupGetBits(s_wifi_event_group) & S_ESPTOUCH_START_BIT)  return;
     wifi_event_sta_disconnected_t *event = (wifi_event_sta_disconnected_t *) event_data;
     ESP_LOGI(TAG, "Tried connected to %s", event->ssid);
     ESP_LOGI(TAG, "Wifi disconnected with error code %d, retrying...", event->reason);
-    ESP_ERROR_CHECK(esp_wifi_connect());
+    esp_wifi_connect();
     xEventGroupClearBits(s_wifi_event_group, S_CONNECTED_BIT);
   } 
   else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
@@ -76,10 +78,9 @@ void wifi_event_handle(void *arg, esp_event_base_t event_base,
   } 
   else if (event_base == USER_EVENTS && event_id == USER_CHANGE_WIFI) {
     wifi_config_t *wifi_config = (wifi_config_t*) event_data;
-    if (xEventGroupGetBits(s_wifi_event_group) & S_CONNECTED_BIT) {
-      ESP_ERROR_CHECK(esp_wifi_disconnect());
-    }
+    ESP_ERROR_CHECK(esp_wifi_disconnect());
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, wifi_config));
+    esp_wifi_connect();
   } 
   else if (event_base == USER_EVENTS && event_id == USER_WIFI_BTN) {
     ESP_ERROR_CHECK(esp_wifi_disconnect());
@@ -120,7 +121,8 @@ void wifi_event_handle(void *arg, esp_event_base_t event_base,
     ESP_ERROR_CHECK( esp_wifi_disconnect() );
     ESP_ERROR_CHECK( esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
     esp_wifi_connect();
-    } else if (event_base == SC_EVENT && event_id == SC_EVENT_SEND_ACK_DONE) {
+    } 
+    else if (event_base == SC_EVENT && event_id == SC_EVENT_SEND_ACK_DONE) {
       xEventGroupSetBits(s_wifi_event_group, S_ESPTOUCH_DONE_BIT);
     }
 }
@@ -185,6 +187,7 @@ esp_err_t connect_wifi(void)
 
 esp_err_t set_wifi(char *p_ssid, char *p_pwd)
 {
+  xEventGroupSetBits(s_wifi_event_group, S_ESPTOUCH_DONE_BIT);
   wifi_config_t wifi_config = {
     .sta = {
       .sort_method = WIFI_CONNECT_AP_BY_SECURITY,
