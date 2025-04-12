@@ -156,7 +156,7 @@ esp_err_t ir_send_code_tv(long ir_code_id, long ir_remote_id)
         return ESP_FAIL;
     }
     if (xSemaphoreTake(ir_mutex, 10 / portTICK_PERIOD_MS) == pdTRUE) {
-        ESP_LOGI(TAG, ">Sent IR: %d %d %d\n", ir_to_send.protocol, ir_to_send.address, ir_to_send.command);
+        ESP_LOGI(TAG, ">Sent IR: %x %x %x %x\n", ir_to_send.protocol, ir_to_send.address, ir_to_send.command, ir_to_send.flags);
         irsnd_send_data (&ir_to_send, TRUE);
         xSemaphoreGive(ir_mutex);
     } else {
@@ -180,6 +180,9 @@ esp_err_t ir_add_code_tv_detect(long ir_code_id, long ir_remote_id)
         s_ir_code_id = ir_code_id;
         s_ir_remote_id = ir_remote_id;
         xTaskNotifyGive(s_ir_receive_task_handle);
+    } else {
+        ESP_LOGE(TAG, "IR module busy");
+        return ESP_FAIL;
     }
     return ESP_OK;
 }

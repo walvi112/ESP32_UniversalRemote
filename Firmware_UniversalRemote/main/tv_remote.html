@@ -23,12 +23,15 @@
 
         .btn {
           margin: 5px 2px 5px;
+          -webkit-tap-highlight-color: #e2e2e2 !important;
         }
 
-        .btn:hover{
-          opacity: .8;
+        @media (hover: hover) {
+          button:hover {
+            opacity: .8;
+          }
         }
-        
+
         .btn:active{
           transform: scale(0.95);
         }

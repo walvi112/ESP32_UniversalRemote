@@ -84,6 +84,7 @@ void wifi_event_handle(void *arg, esp_event_base_t event_base,
   } 
   else if (event_base == USER_EVENTS && event_id == USER_WIFI_BTN) {
     ESP_ERROR_CHECK(esp_wifi_disconnect());
+    xEventGroupClearBits(s_wifi_event_group, S_CONNECTED_BIT);
     xTaskCreatePinnedToCore(smartconfig_task, "SMART_CONFIG_TASK", 4096, NULL, 3, NULL, 0);
   } 
   else if (event_base == SC_EVENT && event_id == SC_EVENT_SCAN_DONE) {
