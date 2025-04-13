@@ -64,7 +64,7 @@ void app_main(void)
 
     ESP_ERROR_CHECK(ir_init());
     ESP_ERROR_CHECK(ir_storage_init());
-    ESP_ERROR_CHECK(connect_wifi());
+    ESP_ERROR_CHECK(wifi_init());
     ESP_ERROR_CHECK(startwebserver());
 
     xTaskCreatePinnedToCore(&cli_task, "CLI_TASK", 4096, NULL, 1, NULL, 1);
