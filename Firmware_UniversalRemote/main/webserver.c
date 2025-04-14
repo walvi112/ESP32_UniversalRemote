@@ -2,6 +2,7 @@
 #include "esp_http_server.h"
 #include "esp_log.h"
 #include "ir_manage.h"
+#include "wifi_connect.h"
 
 static const char *TAG = "WEBSERVER";
 
@@ -18,7 +19,11 @@ static esp_err_t http_resp_favicon(httpd_req_t *req)
 static esp_err_t http_resp_root(httpd_req_t *req) 
 {   
     httpd_resp_set_status(req, "307 Temporary Redirect");
-    httpd_resp_set_hdr(req, "Location", "/tv/1");
+    if (get_wifi_mode() == WIFI_MODE_AP) {
+        httpd_resp_set_hdr(req, "Location", "/wifi");
+    } else {
+        httpd_resp_set_hdr(req, "Location", "/tv/1");
+    }
     httpd_resp_send(req, NULL, 0); 
     return ESP_OK;
 }
@@ -90,6 +95,40 @@ static esp_err_t http_resp_ac_remote(httpd_req_t *req)
 
     httpd_resp_send_404(req);
     return ESP_FAIL;
+}
+
+static esp_err_t httpd_resp_setwifi(httpd_req_t *req)
+{
+    if (get_wifi_mode() != WIFI_MODE_AP)
+    {
+        httpd_resp_send_404(req);
+        return ESP_FAIL;
+    }
+
+    if (req->method == HTTP_GET) {
+        extern const unsigned char login_html_start [] asm("_binary_login_html_start");
+        extern const unsigned char login_html_end [] asm("_binary_login_html_end");
+        const size_t login_html_size = (login_html_end - login_html_start);
+
+        httpd_resp_send_chunk(req, (const char*)login_html_start, login_html_size);
+        httpd_resp_sendstr_chunk(req, NULL);
+    } else {
+        ESP_LOGI(TAG, "Web set wifi");
+        char buf[32];
+        int ret, remaining = req->content_len;
+        while (remaining > 0)
+        {
+            if ((ret = httpd_req_recv(req, buf, (remaining > sizeof(buf) ? remaining : sizeof(buf)))) <= 0) {
+                if (ret == HTTPD_SOCK_ERR_TIMEOUT) {
+                    continue;
+                }
+                return ESP_FAIL;
+            }
+            remaining -= ret;
+        }
+        ESP_LOGI(TAG, "%s", buf);
+    }
+    return ESP_OK;
 }
 
 esp_err_t startwebserver(void) 
@@ -165,6 +204,22 @@ esp_err_t startwebserver(void)
         .user_ctx = "add",
     };
     httpd_register_uri_handler(server, &add_tv);
+
+    httpd_uri_t set_wifi_page = {
+        .uri = "/wifi",
+        .method = HTTP_GET,
+        .handler = httpd_resp_setwifi,
+        .user_ctx = NULL,
+    };
+    httpd_register_uri_handler(server, &set_wifi_page);
+
+    httpd_uri_t set_wifi_cmd = {
+        .uri = "/wifiset",
+        .method = HTTP_POST,
+        .handler = httpd_resp_setwifi,
+        .user_ctx = NULL,
+    };
+    httpd_register_uri_handler(server, &set_wifi_cmd);
 
     return ESP_OK;
 }

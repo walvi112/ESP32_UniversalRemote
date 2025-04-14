@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<header>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Remote Control</title> 
+    <style>
+        input[type=text], input[type=password] {
+            min-width: 350px;
+            max-width: 35%;
+            padding: 12px 20px;
+            margin: 8px 0;
+            display: inline-block;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #04AA6d;
+            color: white;
+            padding: 14px 20px;
+            margin: 8px 0;
+            display: inline-block;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+            width: 100%;
+            -webkit-tap-highlight-color: #e2e2e2 !important;
+        }
+
+        @media (hover: hover) {
+          button:hover {
+            opacity: .8;
+          }
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        @media screen and (max-width: 300px) {
+            span.psw {
+                display: block;
+                float: none;
+            }
+        }
+
+        .container {
+            padding: 16px;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            right: 0;
+            left: 0;
+            display: flex;
+            -webkit-box-align: center;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</header>
+<body>
+    <div class="container">
+        <form action="/wifiset" method="post" enctype="application/x-www-form-urlencoded"> 
+            <label for="ssid">SSID</label><br>
+            <input type="text" maxlength="32" placeholder="Enter SSID" id="ssid" name="ssid" required><br>
+            <label for="pwd">Password</label><br>
+            <input type="password" maxlength="64" placeholder="Enter Password" id="pwd" name="pwd" required><br>
+            <button type="submit" value="Submit">Submit</button>
+        </form>
+    </div>
+</body>
+
+</html>
