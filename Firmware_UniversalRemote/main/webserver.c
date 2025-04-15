@@ -74,7 +74,7 @@ static esp_err_t http_resp_tv_remote_command(httpd_req_t *req)
         ESP_LOGI(TAG, "Adding IR code");
         ir_add_code_tv_detect(ir_code, num_dev);
     }    
-    httpd_resp_send(req, NULL, 0);    
+    httpd_resp_send(req, NULL, 0);
     return ESP_OK;
 }
 
@@ -99,12 +99,6 @@ static esp_err_t http_resp_ac_remote(httpd_req_t *req)
 
 static esp_err_t httpd_resp_setwifi(httpd_req_t *req)
 {
-    if (get_wifi_mode() != WIFI_MODE_AP)
-    {
-        httpd_resp_send_404(req);
-        return ESP_FAIL;
-    }
-
     if (req->method == HTTP_GET) {
         extern const unsigned char login_html_start [] asm("_binary_login_html_start");
         extern const unsigned char login_html_end [] asm("_binary_login_html_end");
@@ -125,15 +119,14 @@ static esp_err_t httpd_resp_setwifi(httpd_req_t *req)
             }
             remaining -= ret;
         }
-        ESP_LOGI(TAG, "%s", buf);
-        ESP_LOGI(TAG, "%d", strlen(buf));
-        char* first_eq = strchr(buf, '=');
-        char* second_eq = strchr(first_eq + 1, '=');
-
+        char* form_ssid = strchr(buf, '=') + 1;
+        char* form_pwd = strchr(form_ssid, '=') + 1;
+        
+        buf[req->content_len] = '\0';
         *strchr(buf, '&') = '\0';
+        *strchr(buf, '+') = ' ';
 
-        printf("SSID: %s\n", first_eq+1);
-        printf("PWD: %s\n", second_eq+1);
+        set_wifi(form_ssid, form_pwd);
         httpd_resp_send(req, NULL, 0);
     }
     return ESP_OK;
