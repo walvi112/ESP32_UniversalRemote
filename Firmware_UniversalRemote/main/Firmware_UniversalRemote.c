@@ -68,7 +68,7 @@ void app_main(void)
     ESP_ERROR_CHECK(startwebserver());
 
     xTaskCreatePinnedToCore(&cli_task, "CLI_TASK", 4096, NULL, 1, NULL, 1);
-    xTaskCreatePinnedToCore(&key_press_task, "KEY_PRESS_TASK", 1024, NULL, 2, &key_press_task_handle, 1);
+    xTaskCreatePinnedToCore(&key_press_task, "KEY_PRESS_TASK", 2048, NULL, 2, &key_press_task_handle, 1);
 }
 
 esp_err_t str_to_parram_int(char *input, int *output_array, unsigned int array_length)
