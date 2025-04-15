@@ -113,8 +113,7 @@ static esp_err_t httpd_resp_setwifi(httpd_req_t *req)
         httpd_resp_send_chunk(req, (const char*)login_html_start, login_html_size);
         httpd_resp_sendstr_chunk(req, NULL);
     } else {
-        ESP_LOGI(TAG, "Web set wifi");
-        char buf[32];
+        char buf[128];
         int ret, remaining = req->content_len;
         while (remaining > 0)
         {
@@ -127,6 +126,15 @@ static esp_err_t httpd_resp_setwifi(httpd_req_t *req)
             remaining -= ret;
         }
         ESP_LOGI(TAG, "%s", buf);
+        ESP_LOGI(TAG, "%d", strlen(buf));
+        char* first_eq = strchr(buf, '=');
+        char* second_eq = strchr(first_eq + 1, '=');
+
+        *strchr(buf, '&') = '\0';
+
+        printf("SSID: %s\n", first_eq+1);
+        printf("PWD: %s\n", second_eq+1);
+        httpd_resp_send(req, NULL, 0);
     }
     return ESP_OK;
 }
@@ -135,6 +143,7 @@ esp_err_t startwebserver(void)
 {
     httpd_handle_t server = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+    config.max_uri_handlers = 10;
     config.uri_match_fn = httpd_uri_match_wildcard;
     ESP_LOGI(TAG, "Starting server on port: '%d'", config.server_port);
     
@@ -214,7 +223,7 @@ esp_err_t startwebserver(void)
     httpd_register_uri_handler(server, &set_wifi_page);
 
     httpd_uri_t set_wifi_cmd = {
-        .uri = "/wifiset",
+        .uri = "/wifi",
         .method = HTTP_POST,
         .handler = httpd_resp_setwifi,
         .user_ctx = NULL,
