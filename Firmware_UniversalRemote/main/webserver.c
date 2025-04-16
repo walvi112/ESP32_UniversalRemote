@@ -6,6 +6,49 @@
 
 static const char *TAG = "WEBSERVER";
 
+static esp_err_t url_decode(char *in, char *out)
+{
+    static const char hex_to_dec_arr[] = {
+        -1,-1,-1,-1,-1,-1,-1,-1, -1,-1,-1,-1,-1,-1,-1,-1,
+        -1,-1,-1,-1,-1,-1,-1,-1, -1,-1,-1,-1,-1,-1,-1,-1,
+        -1,-1,-1,-1,-1,-1,-1,-1, -1,-1,-1,-1,-1,-1,-1,-1,
+         0, 1, 2, 3, 4, 5, 6, 7,  8, 9,-1,-1,-1,-1,-1,-1,
+        -1,10,11,12,13,14,15,-1, -1,-1,-1,-1,-1,-1,-1,-1,
+        -1,-1,-1,-1,-1,-1,-1,-1, -1,-1,-1,-1,-1,-1,-1,-1,
+        -1,10,11,12,13,14,15,-1, -1,-1,-1,-1,-1,-1,-1,-1,
+        -1,-1,-1,-1,-1,-1,-1,-1, -1,-1,-1,-1,-1,-1,-1,-1,
+        -1,-1,-1,-1,-1,-1,-1,-1, -1,-1,-1,-1,-1,-1,-1,-1,
+        -1,-1,-1,-1,-1,-1,-1,-1, -1,-1,-1,-1,-1,-1,-1,-1,
+        -1,-1,-1,-1,-1,-1,-1,-1, -1,-1,-1,-1,-1,-1,-1,-1,
+        -1,-1,-1,-1,-1,-1,-1,-1, -1,-1,-1,-1,-1,-1,-1,-1,
+        -1,-1,-1,-1,-1,-1,-1,-1, -1,-1,-1,-1,-1,-1,-1,-1,
+        -1,-1,-1,-1,-1,-1,-1,-1, -1,-1,-1,-1,-1,-1,-1,-1,
+        -1,-1,-1,-1,-1,-1,-1,-1, -1,-1,-1,-1,-1,-1,-1,-1,
+        -1,-1,-1,-1,-1,-1,-1,-1, -1,-1,-1,-1,-1,-1,-1,-1
+    };
+    
+    
+    if (in == NULL) {
+        *out = '\0';
+        return ESP_FAIL;
+    }
+    
+    char c, *iter = out;
+    int8_t v1, v2;
+    while ((c = *in++) != '\0') {
+        if (c == '%') {
+            if ((v1 = hex_to_dec_arr[(unsigned char)*in++]) < 0 || (v2 = hex_to_dec_arr[(unsigned char)*in++]) < 0) {
+                *iter = '\0';
+                return ESP_FAIL;
+            }
+            c = (char) (v1 << 4) | v2;
+        }
+        *iter++ = c;
+    }
+    *iter = '\0';
+    return ESP_OK;
+}
+
 static esp_err_t http_resp_favicon(httpd_req_t *req)
 {
     extern const unsigned char favicon_ico_start[] asm("_binary_favicon_ico_start");
@@ -107,11 +150,12 @@ static esp_err_t httpd_resp_setwifi(httpd_req_t *req)
         httpd_resp_send_chunk(req, (const char*)login_html_start, login_html_size);
         httpd_resp_sendstr_chunk(req, NULL);
     } else {
-        char buf[128];
+        static char buf_raw[128];
+        static char buf_decode[128];
         int ret, remaining = req->content_len;
         while (remaining > 0)
         {
-            if ((ret = httpd_req_recv(req, buf, (remaining > sizeof(buf) ? remaining : sizeof(buf)))) <= 0) {
+            if ((ret = httpd_req_recv(req, buf_raw, (remaining > sizeof(buf_raw) ? remaining : sizeof(buf_raw)))) <= 0) {
                 if (ret == HTTPD_SOCK_ERR_TIMEOUT) {
                     continue;
                 }
@@ -119,13 +163,24 @@ static esp_err_t httpd_resp_setwifi(httpd_req_t *req)
             }
             remaining -= ret;
         }
-        char* form_ssid = strchr(buf, '=') + 1;
+
+        buf_raw[req->content_len] = '\0';
+        if (url_decode(buf_raw, buf_decode) != ESP_OK)
+            return ESP_FAIL;
+
+        char* form_ssid = strchr(buf_decode, '=') + 1;
         char* form_pwd = strchr(form_ssid, '=') + 1;
         
-        buf[req->content_len] = '\0';
-        *strchr(buf, '&') = '\0';
-        *strchr(buf, '+') = ' ';
+        *strchr(buf_decode, '&') = '\0';
+        char *plus_index = strchr(buf_decode, '+');
+        while (plus_index != NULL) 
+        {
+            *plus_index++ = ' ';
+            plus_index = strchr(plus_index, '+');
+        }
 
+        ESP_LOGI(TAG, "SSID: %s", form_ssid);
+        ESP_LOGI(TAG, "PWD: %s", form_pwd);
         set_wifi(form_ssid, form_pwd);
         httpd_resp_send(req, NULL, 0);
     }
