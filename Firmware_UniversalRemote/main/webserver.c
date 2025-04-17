@@ -75,6 +75,11 @@ static esp_err_t http_resp_root(httpd_req_t *req)
 
 static esp_err_t http_resp_tv_remote(httpd_req_t *req) 
 {   
+    if (get_wifi_mode() != WIFI_MODE_STA) {
+        httpd_resp_send_404(req);
+        return ESP_FAIL;
+    }
+    
     char *pch =strrchr(req->uri,'/');
     long num_dev = strtol(pch + 1, NULL, 10);
     extern const unsigned char tv_remote_html_start[] asm("_binary_tv_remote_html_start");
@@ -92,6 +97,11 @@ static esp_err_t http_resp_tv_remote(httpd_req_t *req)
 
 static esp_err_t http_resp_tv_remote_command(httpd_req_t *req) 
 {
+    if (get_wifi_mode() != WIFI_MODE_STA) {
+        httpd_resp_send_404(req);
+        return ESP_FAIL;
+    }
+
     char *pch =strrchr(req->uri,'/');
     long num_dev = strtol(pch + 1, NULL, 10) - 1;
     
@@ -141,6 +151,11 @@ static esp_err_t http_resp_ac_remote(httpd_req_t *req)
 
 static esp_err_t httpd_resp_setwifi(httpd_req_t *req)
 {
+    if (get_wifi_mode() != WIFI_MODE_AP) {
+        httpd_resp_send_404(req);
+        return ESP_FAIL;
+    }
+
     if (req->method == HTTP_GET) {
         extern const unsigned char login_html_start [] asm("_binary_login_html_start");
         extern const unsigned char login_html_end [] asm("_binary_login_html_end");
